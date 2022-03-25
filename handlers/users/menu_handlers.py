@@ -11,6 +11,17 @@ from utils.db_api.database import specialities_data, degrees_data, main_menu_dat
 
 import logging
 
+messages_for_delete = []
+
+async def delete_msg_file(chat_id):
+    try:
+        messages_for_delete_copy = messages_for_delete.copy()
+        for msg in messages_for_delete_copy:
+            await bot.delete_message(chat_id = chat_id, message_id = msg)
+            messages_for_delete.remove(msg)
+    except Exception as e:
+        print(e)
+
 @dp.message_handler(Command("menu"))
 async def show_menu(message: types.Message):
     logging.info(f"id={message.from_user.id}, full_name={message.from_user.full_name}, locale={message.from_user.locale}, mention={message.from_user.mention}, username={message.from_user.username}")
@@ -35,11 +46,14 @@ async def list_of_specialities(callback: Union[types.Message, types.CallbackQuer
 async def list_of_mainmenu(callback: Union[types.Message, types.CallbackQuery], degrees, specialities, **kwargs):
     main_text = f"Вы выбрали {degrees_data[degrees]} - {specialities_data[degrees][specialities]} \n\n"
     markup = await main_menu_keyboard(degrees, specialities)
+    await delete_msg_file(callback.message['chat']['id'])
     await callback.message.edit_text(text = main_text+"Пожалуйста выберите вопрос:")
     await callback.message.edit_reply_markup(markup)
 
 async def list_of_questions(callback: types.CallbackQuery, degrees, specialities, main_menu, **kwargs):
     main_text = f"Вы выбрали {degrees_data[degrees]} - {specialities_data[degrees][specialities]} \n\n"
+    await delete_msg_file(callback.message['chat']['id'])
+
     if main_menu in ['3_mm', '4_mm', '5_mm', '6_mm', '7_mm']:
         markup = await questions_keyboard(degrees, specialities, main_menu)
         await callback.message.edit_text(main_text)
@@ -57,12 +71,13 @@ async def list_of_questions(callback: types.CallbackQuery, degrees, specialities
         await callback.message.edit_text(main_text+show_data_text, reply_markup=markup, parse_mode="HTML")
         chat_id = callback.message['chat']['id']
         if main_menu == "10_mm":
-            await bot.send_document(chat_id = chat_id, document = open('files/documents/Заявление на место в общежитии.pdf', 'rb'))
-        
+            msg = await bot.send_document(chat_id = chat_id, document = open('files/documents/Заявление на место в общежитии.pdf', 'rb'))
+            messages_for_delete.append(msg.message_id)
 
 
 async def list_of_in_questions(callback: types.CallbackQuery, degrees, specialities, main_menu, questions, **kwargs):
     main_text = f"Вы выбрали {degrees_data[degrees]} - {specialities_data[degrees][specialities]} \n\n"
+    await delete_msg_file(callback.message['chat']['id'])
     if questions in ["6_qd", "7_qd"]:
         markup = await in_questions_keyboard(degrees, specialities, main_menu, questions)
         await callback.message.edit_text(main_text, parse_mode="HTML")
@@ -73,21 +88,29 @@ async def list_of_in_questions(callback: types.CallbackQuery, degrees, specialit
         await callback.message.edit_text(main_text+show_data_text, reply_markup=markup, parse_mode="HTML")
         chat_id = callback.message['chat']['id']
         if questions == "9_qd":
-            await bot.send_document(chat_id = chat_id, document = open('files/documents/Форма заявления Кульдеев Е.И.каз.pdf', 'rb'))
-            await bot.send_document(chat_id = chat_id, document = open('files/documents/Формы заявлений Кульдеев Е.И. русc.pdf', 'rb'))
+            msg1 = await bot.send_document(chat_id = chat_id, document = open('files/documents/Форма заявления Кульдеев Е.И.каз.pdf', 'rb'))
+            msg2 = await bot.send_document(chat_id = chat_id, document = open('files/documents/Формы заявлений Кульдеев Е.И. русc.pdf', 'rb'))
+            messages_for_delete.append(msg1.message_id)
+            messages_for_delete.append(msg2.message_id)
+
         elif questions == "5_qd":
-            await bot.send_document(chat_id = chat_id, document = open('files/documents/Пример заполнения каз.pdf', 'rb'))
-            await bot.send_document(chat_id = chat_id, document = open('files/documents/Пример заполнения русс.pdf', 'rb'))
-            
+            msg1 = await bot.send_document(chat_id = chat_id, document = open('files/documents/Пример заполнения каз.pdf', 'rb'))
+            msg2 = await bot.send_document(chat_id = chat_id, document = open('files/documents/Пример заполнения русс.pdf', 'rb'))
+            messages_for_delete.append(msg1.message_id)
+            messages_for_delete.append(msg2.message_id)
+
 async def show_question(callback: types.CallbackQuery, degrees, specialities, main_menu, questions, in_questions, question_id):
     main_text = f"Вы выбрали {degrees_data[degrees]} - {specialities_data[degrees][specialities]} \n\n"
+    await delete_msg_file(callback.message['chat']['id'])
     markup = question_id_keyboard_back(degrees, specialities, main_menu, questions, in_questions, question_id)
     show_data_text = data_text[questions][in_questions]
     chat_id = callback.message['chat']['id']
     if in_questions in ["1_iqd", "2_iqd", "3_iqd", "4_iqd"]:
-        await bot.send_document(chat_id = chat_id, document = open('files/documents/Форма заявления Жаутиков Б.A русс.pdf', 'rb'))
-        await bot.send_document(chat_id = chat_id, document = open('files/documents/Форма Заявления Жаутиков Б.A.pdf', 'rb'))
-        
+        msg1 = await bot.send_document(chat_id = chat_id, document = open('files/documents/Форма заявления Жаутиков Б.A русс.pdf', 'rb'))
+        msg2 = await bot.send_document(chat_id = chat_id, document = open('files/documents/Форма Заявления Жаутиков Б.A.pdf', 'rb'))
+        messages_for_delete.append(msg1.message_id)
+        messages_for_delete.append(msg2.message_id)
+
     await callback.message.edit_text(main_text + show_data_text, reply_markup=markup, parse_mode="HTML")
 
 
